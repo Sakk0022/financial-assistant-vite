@@ -77,7 +77,7 @@ const FinancialAssistantPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50">
       {/* Header */}
-      <header className="gradient-bg text-white shadow-xl">
+      <header className="gradient-bg text-white shadow-xl ">
         <div className="max-w-8xl mx-auto px-4 py-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight animate-fade-in mb-4">
             Финансовый AI-Ассистент для Управления Ликвидностью

@@ -32,6 +32,12 @@ body {
   min-height: 100vh;
 }
 
+header {
+  position: relative;
+  z-index: 10; /* Чтобы header был выше других элементов */
+  background: linear-gradient(to right, #4f46e5, #7c3aed, #2563eb); /* Явно задаём фон без прозрачности */
+}
+
 #root {
   max-width: 100%;
   margin: 0;
