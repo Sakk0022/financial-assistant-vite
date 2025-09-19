@@ -27,6 +27,8 @@ const FinancialAssistantPage = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState(null);
+  const [tables, setTables] = useState([]);
+  const [selectedTable, setSelectedTable] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -46,7 +48,25 @@ const FinancialAssistantPage = () => {
       }
     };
 
+    const fetchTables = async () => {
+      try {
+        const response = await fetch("https://samurai0022-28f28ff378d1.herokuapp.com/api/tables");
+        if (response.ok) {
+          const data = await response.json();
+          setTables(data.tables);
+          if (data.tables.length > 0) {
+            setSelectedTable(data.tables[0]); // Устанавливаем первую таблицу по умолчанию
+          }
+        } else {
+          setUploadStatus("Ошибка при загрузке списка таблиц");
+        }
+      } catch (err) {
+        setUploadStatus(`Ошибка при загрузке списка таблиц: ${err.message}`);
+      }
+    };
+
     fetchExchangeRates();
+    fetchTables();
     const interval = setInterval(() => {
       if (autoRefresh) fetchExchangeRates();
     }, 300000);
@@ -93,6 +113,13 @@ const FinancialAssistantPage = () => {
         if (response.ok) {
           const result = await response.json();
           setUploadStatus(`Файл успешно загружен: ${result.message}`);
+          // Обновляем список таблиц после успешной загрузки
+          const tablesResponse = await fetch("https://samurai0022-28f28ff378d1.herokuapp.com/api/tables");
+          if (tablesResponse.ok) {
+            const data = await tablesResponse.json();
+            setTables(data.tables);
+            setSelectedTable(data.tables.includes("uploaded_csv_data") ? "uploaded_csv_data" : data.tables[0] || "");
+          }
         } else {
           const errorData = await response.json();
           setUploadStatus(`Ошибка загрузки: ${errorData.error}`);
@@ -208,8 +235,27 @@ const FinancialAssistantPage = () => {
                       {uploadStatus}
                     </p>
                   )}
+                  <div className="mt-2">
+                    <label className="text-sm text-gray-800 font-medium">Выберите таблицу для анализа:</label>
+                    <select
+                      value={selectedTable}
+                      onChange={(e) => setSelectedTable(e.target.value)}
+                      className="p-2 rounded-lg border bg-white text-sm w-full"
+                      disabled={tables.length === 0}
+                    >
+                      {tables.length === 0 ? (
+                        <option value="">Нет доступных таблиц</option>
+                      ) : (
+                        tables.map((table) => (
+                          <option key={table} value={table}>
+                            {table}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-500 mt-2">Загрузите файл .csv для анализа данных.</p>
+                <p className="text-sm text-gray-500 mt-2">Загрузите файл .csv или выберите таблицу для анализа данных.</p>
               </div>
 
               <div className="mt-6 pt-4 border-t border-indigo-50">
