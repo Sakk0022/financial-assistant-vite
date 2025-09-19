@@ -300,9 +300,9 @@ const FinancialAssistantPage = () => {
                 </h3>
                 <div className="flex flex-col gap-3">
                   {KEYWORDS.map(({ keyword, description }, index) => (
-                    <div key={index} className="flex items-start gap-2">
+                    <div key={index} className="flex items-start gap-3">
                       <button
-                        className="keyword-chip text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-medium rounded-lg px-2 py-1 transition-colors duration-200 shadow-sm min-w-[100px]"
+                        className="keyword-chip text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-medium rounded-lg px-2 py-1 transition-colors duration-200 shadow-sm w-[120px] text-left"
                         onClick={() => {
                           navigator.clipboard?.writeText(keyword);
                           if (typeof window !== "undefined") {
