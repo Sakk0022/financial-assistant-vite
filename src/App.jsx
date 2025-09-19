@@ -1,4 +1,3 @@
-// src/App.js
 import React, { useState, useEffect, useMemo } from "react";
 
 const CURRENCY_LIST = [
@@ -26,6 +25,8 @@ const FinancialAssistantPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -74,10 +75,44 @@ const FinancialAssistantPage = () => {
     return Math.max(...arr, 1);
   }, [displayRates, baseCurrency]);
 
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (file && file.type === "text/csv") {
+      setUploadedFile(file);
+      setUploadStatus("Загрузка...");
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (response.ok) {
+          setUploadStatus("Файл успешно загружен в базу данных!");
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            console.log("Содержимое CSV:", e.target.result);
+          };
+          reader.readAsText(file);
+        } else {
+          setUploadStatus("Ошибка при загрузке файла в базу данных.");
+        }
+      } catch (err) {
+        setUploadStatus("Ошибка при отправке файла: " + err.message);
+      }
+    } else {
+      setUploadedFile(null);
+      setUploadStatus("Пожалуйста, загрузите файл в формате .csv");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50">
       {/* Header */}
-      <header className="gradient-bg text-white shadow-xl ">
+      <header className="gradient-bg text-white shadow-xl">
         <div className="max-w-8xl mx-auto px-4 py-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight animate-fade-in mb-4">
             Финансовый AI-Ассистент для Управления Ликвидностью
@@ -88,17 +123,14 @@ const FinancialAssistantPage = () => {
         </div>
       </header>
 
-      <main className="max-w-8xl mx-auto px-4 py-8">
-        {/* layout: 5 columns on large screens — left (rates+keywords), center (visuals), right (big chat - 3 cols) */}
+      <main className="max-w-8xl mx-auto px-4 py-4">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
-          {/* Left: Rates + Key Queries */}
           <aside className="lg:col-span-2 order-2">
             <div className="sidebar">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-800 flex items-center">
                   <span className="mr-2">📈</span> Курсы к <span className="ml-2 font-bold">{baseCurrency}</span>
                 </h2>
-
                 <div className="flex items-center gap-2">
                   <select
                     value={baseCurrency}
@@ -111,7 +143,6 @@ const FinancialAssistantPage = () => {
                       </option>
                     ))}
                   </select>
-
                   <button
                     title="обновить"
                     onClick={() => setApiRates(null)}
@@ -134,7 +165,6 @@ const FinancialAssistantPage = () => {
                     .filter((code) => code !== baseCurrency)
                     .map((code) => {
                       const dr = displayRates[code];
-                      const percent = dr ? Math.min(100, (dr / relativeMax) * 100) : 0;
                       const info = find(code);
                       return (
                         <div key={code} className="currency-card">
@@ -145,15 +175,8 @@ const FinancialAssistantPage = () => {
                               <p className="text-xs text-gray-500">1 {code} = {dr ? dr.toFixed(4) : "—"} {baseCurrency}</p>
                             </div>
                           </div>
-
                           <div className="text-right min-w-[96px]">
                             <div className="text-lg font-bold text-indigo-600">{dr ? dr.toFixed(4) : "—"}</div>
-                            <div className="w-28 bg-indigo-100 rounded-full h-2 mt-2 overflow-hidden">
-                              <div
-                                className="h-2 rounded-full"
-                                style={{ width: `${percent}%`, background: "linear-gradient(90deg,#6366f1,#7c3aed)" }}
-                              />
-                            </div>
                           </div>
                         </div>
                       );
@@ -169,12 +192,35 @@ const FinancialAssistantPage = () => {
                 <p className="text-xs text-gray-400">Обновлено: {new Date().toLocaleTimeString("ru-RU")}</p>
               </div>
 
-              {/* --- Ключевые Запросы (вертикально) --- */}
+              {/* --- Загрузка данных --- */}
+              <div className="mt-6 pt-4 border-t border-indigo-50">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                  <span className="mr-2">📂</span> Загрузи свои данные
+                </h3>
+                <div className="flex flex-col gap-2">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileUpload}
+                    className="p-2 border rounded-lg bg-white text-sm"
+                  />
+                  {uploadedFile && (
+                    <p className="text-sm text-gray-600">Загружен файл: {uploadedFile.name}</p>
+                  )}
+                  {uploadStatus && (
+                    <p className={`text-sm ${uploadStatus.includes("Ошибка") ? "text-red-600" : "text-green-600"}`}>
+                      {uploadStatus}
+                    </p>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500 mt-2">Загрузите файл .csv для анализа данных.</p>
+              </div>
+
+              {/* --- Ключевые Запросы --- */}
               <div className="mt-6 pt-4 border-t border-indigo-50">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
                   <span className="mr-2">🔑</span> Ключевые Запросы
                 </h3>
-
                 <div className="flex flex-col gap-2">
                   {KEYWORDS.map((keyword, index) => (
                     <button
@@ -182,7 +228,6 @@ const FinancialAssistantPage = () => {
                       className="keyword-chip w-full text-left"
                       onClick={() => {
                         navigator.clipboard?.writeText(keyword);
-                        // ненавязчивый тост
                         if (typeof window !== "undefined") {
                           const prev = document.getElementById("kw-toast");
                           if (prev) prev.remove();
@@ -199,17 +244,12 @@ const FinancialAssistantPage = () => {
                     </button>
                   ))}
                 </div>
-
                 <p className="text-sm text-gray-500 mt-4">Кликните для быстрого ввода в чат. Справа можно описать значение слова.</p>
               </div>
-
-              
             </div>
           </aside>
 
-          
-
-          {/* Right: Big Chat (шире) */}
+          {/* Right: Big Chat */}
           <section className="lg:col-span-3 order-3">
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 animate-fade-in h-full flex flex-col">
               <div className="p-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
@@ -218,7 +258,6 @@ const FinancialAssistantPage = () => {
                   <span className="text-sm opacity-80">Чат</span>
                 </h2>
               </div>
-
               <div className="p-3 flex-1">
                 <iframe
                   src="https://hackathon.shai.pro/chatbot/XgtqeIIGT8nIz4GX"
