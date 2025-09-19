@@ -60,7 +60,6 @@ const FinancialAssistantPage = () => {
           setTables(data.tables || []);
           if (data.tables && data.tables.length > 0) {
             setSelectedTable(data.tables[0]);
-            // Отправляем выбранную таблицу на бэкенд
             await selectTable(data.tables[0]);
           }
         } else {
@@ -299,11 +298,11 @@ const FinancialAssistantPage = () => {
                 <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
                   <span className="mr-2">🔑</span> Ключевые Запросы
                 </h3>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
                   {KEYWORDS.map(({ keyword, description }, index) => (
-                    <div key={index} className="flex items-center gap-3">
+                    <div key={index} className="flex items-start gap-2">
                       <button
-                        className="keyword-chip w-full text-left text-sm bg-indigo-50 hover:bg-indigo-100 rounded-lg p-2"
+                        className="keyword-chip text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-medium rounded-lg px-2 py-1 transition-colors duration-200 shadow-sm min-w-[100px]"
                         onClick={() => {
                           navigator.clipboard?.writeText(keyword);
                           if (typeof window !== "undefined") {
@@ -320,7 +319,7 @@ const FinancialAssistantPage = () => {
                       >
                         {keyword}
                       </button>
-                      <p className="text-xs text-gray-600 flex-1">{description}</p>
+                      <p className="text-sm text-gray-700 flex-1 leading-relaxed">{description}</p>
                     </div>
                   ))}
                 </div>
