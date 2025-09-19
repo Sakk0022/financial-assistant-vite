@@ -85,23 +85,20 @@ const FinancialAssistantPage = () => {
       formData.append("file", file);
 
       try {
-        const response = await fetch("/api/upload", {
+        const response = await fetch("https://samurai0022-28f28ff378d1.herokuapp.com/api/upload-csv", {
           method: "POST",
           body: formData,
         });
 
         if (response.ok) {
-          setUploadStatus("Файл успешно загружен в базу данных!");
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            console.log("Содержимое CSV:", e.target.result);
-          };
-          reader.readAsText(file);
+          const result = await response.json();
+          setUploadStatus(`Файл успешно загружен: ${result.message}`);
         } else {
-          setUploadStatus("Ошибка при загрузке файла в базу данных.");
+          const errorData = await response.json();
+          setUploadStatus(`Ошибка загрузки: ${errorData.error}`);
         }
       } catch (err) {
-        setUploadStatus("Ошибка при отправке файла: " + err.message);
+        setUploadStatus(`Ошибка загрузки: ${err.message}`);
       }
     } else {
       setUploadedFile(null);
@@ -192,7 +189,6 @@ const FinancialAssistantPage = () => {
                 <p className="text-xs text-gray-400">Обновлено: {new Date().toLocaleTimeString("ru-RU")}</p>
               </div>
 
-              {/* --- Загрузка данных --- */}
               <div className="mt-6 pt-4 border-t border-indigo-50">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
                   <span className="mr-2">📂</span> Загрузи свои данные
@@ -216,7 +212,6 @@ const FinancialAssistantPage = () => {
                 <p className="text-sm text-gray-500 mt-2">Загрузите файл .csv для анализа данных.</p>
               </div>
 
-              {/* --- Ключевые Запросы --- */}
               <div className="mt-6 pt-4 border-t border-indigo-50">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
                   <span className="mr-2">🔑</span> Ключевые Запросы
@@ -249,7 +244,6 @@ const FinancialAssistantPage = () => {
             </div>
           </aside>
 
-          {/* Right: Big Chat */}
           <section className="lg:col-span-3 order-3">
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 animate-fade-in h-full flex flex-col">
               <div className="p-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
