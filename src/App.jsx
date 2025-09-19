@@ -19,6 +19,8 @@ const KEYWORDS = [
   { keyword: "purchase schedule", description: "Используется для анализа влияния изменений графика покупок на финансовые метрики." },
 ];
 
+const BACKEND_URL = "https://samurai0022-28f28ff378d1.herokuapp.com";
+
 const FinancialAssistantPage = () => {
   const [baseCurrency, setBaseCurrency] = useState("KZT");
   const [apiRates, setApiRates] = useState(null);
@@ -29,6 +31,7 @@ const FinancialAssistantPage = () => {
   const [uploadStatus, setUploadStatus] = useState(null);
   const [tables, setTables] = useState([]);
   const [selectedTable, setSelectedTable] = useState("");
+  const [tableSelectionStatus, setTableSelectionStatus] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -50,12 +53,15 @@ const FinancialAssistantPage = () => {
 
     const fetchTables = async () => {
       try {
-        const response = await fetch("https://samurai0022-28f28ff378d1.herokuapp.com/api/tables");
+        setTableSelectionStatus(null);
+        const response = await fetch(`${BACKEND_URL}/api/tables`);
         if (response.ok) {
           const data = await response.json();
-          setTables(data.tables);
-          if (data.tables.length > 0) {
+          setTables(data.tables || []);
+          if (data.tables && data.tables.length > 0) {
             setSelectedTable(data.tables[0]);
+            // Отправляем выбранную таблицу на бэкенд
+            await selectTable(data.tables[0]);
           }
         } else {
           setUploadStatus("Ошибка при загрузке списка таблиц");
@@ -77,6 +83,71 @@ const FinancialAssistantPage = () => {
     };
   }, [baseCurrency, autoRefresh]);
 
+  const selectTable = async (tableName) => {
+    try {
+      setTableSelectionStatus("Сохранение...");
+      const response = await fetch(`${BACKEND_URL}/api/select-table`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ table: tableName }),
+      });
+      if (response.ok) {
+        setTableSelectionStatus(`Таблица "${tableName}" выбрана`);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        setTableSelectionStatus(`Ошибка выбора таблицы: ${errorData.error || response.statusText}`);
+      }
+    } catch (err) {
+      setTableSelectionStatus(`Ошибка выбора таблицы: ${err.message}`);
+    }
+  };
+
+  const handleTableChange = async (event) => {
+    const tableName = event.target.value;
+    setSelectedTable(tableName);
+    await selectTable(tableName);
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (file && file.type === "text/csv") {
+      setUploadedFile(file);
+      setUploadStatus("Загрузка...");
+      setTableSelectionStatus(null);
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/upload-csv`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          setUploadStatus(`Файл успешно загружен: ${result.message}`);
+          const tablesResponse = await fetch(`${BACKEND_URL}/api/tables`);
+          if (tablesResponse.ok) {
+            const data = await tablesResponse.json();
+            setTables(data.tables);
+            const newTable = data.tables.includes("uploaded_csv_data") ? "uploaded_csv_data" : data.tables[0] || "";
+            setSelectedTable(newTable);
+            await selectTable(newTable);
+          }
+        } else {
+          const errorData = await response.json();
+          setUploadStatus(`Ошибка загрузки: ${errorData.error}`);
+        }
+      } catch (err) {
+        setUploadStatus(`Ошибка загрузки: ${err.message}`);
+      }
+    } else {
+      setUploadedFile(null);
+      setUploadStatus("Пожалуйста, загрузите файл в формате .csv");
+    }
+  };
+
   const displayRates = useMemo(() => {
     if (!apiRates) return {};
     const out = {};
@@ -95,46 +166,8 @@ const FinancialAssistantPage = () => {
     return Math.max(...arr, 1);
   }, [displayRates, baseCurrency]);
 
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
-    if (file && file.type === "text/csv") {
-      setUploadedFile(file);
-      setUploadStatus("Загрузка...");
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        const response = await fetch("https://samurai0022-28f28ff378d1.herokuapp.com/api/upload-csv", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          setUploadStatus(`Файл успешно загружен: ${result.message}`);
-          const tablesResponse = await fetch("https://samurai0022-28f28ff378d1.herokuapp.com/api/tables");
-          if (tablesResponse.ok) {
-            const data = await tablesResponse.json();
-            setTables(data.tables);
-            setSelectedTable(data.tables.includes("uploaded_csv_data") ? "uploaded_csv_data" : data.tables[0] || "");
-          }
-        } else {
-          const errorData = await response.json();
-          setUploadStatus(`Ошибка загрузки: ${errorData.error}`);
-        }
-      } catch (err) {
-        setUploadStatus(`Ошибка загрузки: ${err.message}`);
-      }
-    } else {
-      setUploadedFile(null);
-      setUploadStatus("Пожалуйста, загрузите файл в формате .csv");
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50">
-      {/* Header */}
       <header className="gradient-bg text-white shadow-xl">
         <div className="max-w-8xl mx-auto px-4 py-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight animate-fade-in mb-4">
@@ -238,7 +271,7 @@ const FinancialAssistantPage = () => {
                     <label className="text-sm text-gray-800 font-medium">Выберите таблицу для анализа:</label>
                     <select
                       value={selectedTable}
-                      onChange={(e) => setSelectedTable(e.target.value)}
+                      onChange={handleTableChange}
                       className="p-2 rounded-lg border bg-white text-sm w-full"
                       disabled={tables.length === 0}
                     >
@@ -252,6 +285,11 @@ const FinancialAssistantPage = () => {
                         ))
                       )}
                     </select>
+                    {tableSelectionStatus && (
+                      <p className={`text-sm ${tableSelectionStatus.includes("Ошибка") ? "text-red-600" : "text-green-600"} mt-1`}>
+                        {tableSelectionStatus}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <p className="text-sm text-gray-500 mt-2">Загрузите файл .csv или выберите таблицу для анализа данных.</p>
