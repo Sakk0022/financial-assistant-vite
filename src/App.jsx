@@ -11,12 +11,12 @@ const CURRENCY_LIST = [
 const find = (code) => CURRENCY_LIST.find((c) => c.code === code) || {};
 
 const KEYWORDS = [
-  "статистика",
-  "рекомендации",
-  "что если",
-  "рост курса",
-  "задержка платежа",
-  "графика закупок",
+  { keyword: "data", description: "Используется для получения данных о транзакциях или счетах для анализа или отчётности." },
+  { keyword: "liquidity", description: "Используется для анализа метрик ликвидности, таких как денежный поток или доступные средства." },
+  { keyword: "what-if", description: "Используется для комплексного анализа 'что, если' для оценки финансовых исходов по всем сценариям." },
+  { keyword: "currency growth", description: "Используется для оценки влияния изменений курса валюты на финансовые результаты." },
+  { keyword: "payment delay", description: "Используется для оценки рисков или влияния задержек транзакций на финансовое состояние." },
+  { keyword: "purchase schedule", description: "Используется для анализа влияния изменений графика покупок на финансовые метрики." },
 ];
 
 const FinancialAssistantPage = () => {
@@ -55,7 +55,7 @@ const FinancialAssistantPage = () => {
           const data = await response.json();
           setTables(data.tables);
           if (data.tables.length > 0) {
-            setSelectedTable(data.tables[0]); // Устанавливаем первую таблицу по умолчанию
+            setSelectedTable(data.tables[0]);
           }
         } else {
           setUploadStatus("Ошибка при загрузке списка таблиц");
@@ -113,7 +113,6 @@ const FinancialAssistantPage = () => {
         if (response.ok) {
           const result = await response.json();
           setUploadStatus(`Файл успешно загружен: ${result.message}`);
-          // Обновляем список таблиц после успешной загрузки
           const tablesResponse = await fetch("https://samurai0022-28f28ff378d1.herokuapp.com/api/tables");
           if (tablesResponse.ok) {
             const data = await tablesResponse.json();
@@ -263,29 +262,31 @@ const FinancialAssistantPage = () => {
                   <span className="mr-2">🔑</span> Ключевые Запросы
                 </h3>
                 <div className="flex flex-col gap-2">
-                  {KEYWORDS.map((keyword, index) => (
-                    <button
-                      key={index}
-                      className="keyword-chip w-full text-left"
-                      onClick={() => {
-                        navigator.clipboard?.writeText(keyword);
-                        if (typeof window !== "undefined") {
-                          const prev = document.getElementById("kw-toast");
-                          if (prev) prev.remove();
-                          const t = document.createElement("div");
-                          t.id = "kw-toast";
-                          t.textContent = `Ключевое слово "${keyword}" скопировано`;
-                          t.className = "fixed bottom-6 right-6 bg-black text-white px-4 py-2 rounded-lg shadow-lg";
-                          document.body.appendChild(t);
-                          setTimeout(() => t.remove(), 1400);
-                        }
-                      }}
-                    >
-                      {keyword}
-                    </button>
+                  {KEYWORDS.map(({ keyword, description }, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <button
+                        className="keyword-chip w-full text-left text-sm bg-indigo-50 hover:bg-indigo-100 rounded-lg p-2"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(keyword);
+                          if (typeof window !== "undefined") {
+                            const prev = document.getElementById("kw-toast");
+                            if (prev) prev.remove();
+                            const t = document.createElement("div");
+                            t.id = "kw-toast";
+                            t.textContent = `Ключевое слово "${keyword}" скопировано`;
+                            t.className = "fixed bottom-6 right-6 bg-black text-white px-4 py-2 rounded-lg shadow-lg";
+                            document.body.appendChild(t);
+                            setTimeout(() => t.remove(), 1400);
+                          }
+                        }}
+                      >
+                        {keyword}
+                      </button>
+                      <p className="text-xs text-gray-600 flex-1">{description}</p>
+                    </div>
                   ))}
                 </div>
-                <p className="text-sm text-gray-500 mt-4">Кликните для быстрого ввода в чат. Справа можно описать значение слова.</p>
+                <p className="text-sm text-gray-500 mt-4">Кликните на ключевое слово для копирования. Описание показывает его назначение.</p>
               </div>
             </div>
           </aside>
